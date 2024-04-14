@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "634925268093",
+    "project_id": "forward-dd0e6",
+    "storage_bucket": "forward-dd0e6.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:634925268093:android:dc113fe3af2014b1e2c514",
+        "android_client_info": {
+          "package_name": "com.abhi.forward"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC1KgDQP--k68ysEt7MaiPs87cxaLn_G88"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
